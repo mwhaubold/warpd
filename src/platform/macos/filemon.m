@@ -9,8 +9,12 @@ static void fsEventCallbackFunction(ConstFSEventStreamRef streamRef,
 	osx_input_interrupt();
 }
 
+const char *macos_config_path;
+
 void osx_monitor_file(const char *_path)
 {
+	macos_config_path = strdup(_path);
+
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		NSString *path = [NSString stringWithCString:_path
 						    encoding:NSUTF8StringEncoding];

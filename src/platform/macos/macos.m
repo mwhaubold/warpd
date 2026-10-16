@@ -54,7 +54,9 @@ static NSFont *get_font(const char *family, int w, int h, const char *s)
 	if (textw > w * 0.8)
 		font = [NSFont fontWithDescriptor:font.fontDescriptor size:ptsz * (w * 0.8) / textw];
 
-	cached = font;
+	/* Not compiled with ARC: keep the font alive beyond the current autorelease pool. */
+	[cached release];
+	cached = [font retain];
 	snprintf(cached_family, sizeof cached_family, "%s", family);
 	cached_w = w;
 	cached_h = h;
@@ -251,6 +253,8 @@ static void *mainloop(void *arg)
 		.monitor_file = osx_monitor_file,
 		.screen_draw_cursor = osx_screen_draw_cursor,
 		.screen_draw_indicator = osx_screen_draw_indicator,
+		.screen_get_id = osx_screen_get_id,
+		.init_status_icon = osx_init_status_icon,
 	};
 
 	main(&platform);

@@ -118,6 +118,8 @@ static struct {
 	{ "hint2_grid_size", "3", "The size of the secondary grid.", OPT_INT },
 
 	{ "screen_chars", "jkl;asdfg", "The characters used for screen selection.", OPT_STRING },
+	{ "screen_remember_position", PLATFORM_DEFAULT("1", "0"), "If set to non-zero, screen selection moves the pointer to where it last was on the selected screen instead of the center (selecting the current screen still centers it).", OPT_INT },
+	{ "menu_bar_icon", "1", "If set to non-zero, show a menu bar icon with pause/reload/quit options (macOS only).", OPT_INT },
 
 	{ "scroll_speed", "300", "Initial scroll speed in units/second (unit varies by platform).", OPT_INT },
 	{ "scroll_max_speed", "9000", "Maximum scroll speed.", OPT_INT },

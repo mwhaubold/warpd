@@ -71,6 +71,9 @@ struct screen {
 
 	struct window *overlay;
 
+	/* Display UUID, stable across reconnects. */
+	char id[40];
+
 	/* Area not covered by the menu bar or dock, relative to x,y (LLO). */
 	NSRect visible_frame;
 
@@ -154,6 +157,12 @@ void osx_copy_selection();
 void osx_monitor_file(const char *_path);
 void osx_input_interrupt();
 void osx_input_interrupt_screen_change();
+void osx_input_set_paused(int paused);
+const char *osx_screen_get_id(screen_t scr);
+void osx_init_status_icon(int enabled);
+
+/* The config file being monitored (if any). */
+extern const char *macos_config_path;
 void osx_commit();
 
 #endif

@@ -18,6 +18,9 @@ static uint8_t passthrough_keys[256] = {0};
 /* Set when the last interrupt was caused by a display configuration change. */
 static int screen_interrupt = 0;
 
+/* While paused, activation keys pass through untouched. Main thread only. */
+static int paused = 0;
+
 static CFMachPortRef tap;
 
 uint8_t active_mods = 0;
@@ -70,6 +73,11 @@ static int read_message(int fd, void *msg, ssize_t sz, int timeout)
 	assert(read(fd, msg, sz) == sz);
 
 	return 0;
+}
+
+void osx_input_set_paused(int _paused)
+{
+	paused = _paused;
 }
 
 void osx_input_interrupt()
@@ -194,6 +202,10 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
 		mods = active_mods;
 		keymods[code] = mods;
 	}
+
+	/* Unless a mode is already active (and has grabbed the keyboard). */
+	if (paused && !grabbed)
+		return event;
 
 	struct input_event ev;
 

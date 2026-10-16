@@ -205,6 +205,26 @@ void osx_screen_get_dimensions(struct screen *scr, int *w, int *h)
 /* Only accessed on the main thread. */
 static int screens_dirty = 0;
 
+static void set_screen_id(struct screen *scr, NSScreen *screen)
+{
+	CGDirectDisplayID display = [screen.deviceDescription[@"NSScreenNumber"] unsignedIntValue];
+	CFUUIDRef uuid = CGDisplayCreateUUIDFromDisplayID(display);
+
+	if (uuid) {
+		CFStringRef str = CFUUIDCreateString(NULL, uuid);
+		CFStringGetCString(str, scr->id, sizeof scr->id, kCFStringEncodingUTF8);
+		CFRelease(str);
+		CFRelease(uuid);
+	} else {
+		snprintf(scr->id, sizeof scr->id, "display-%u", display);
+	}
+}
+
+const char *osx_screen_get_id(struct screen *scr)
+{
+	return scr->id;
+}
+
 /*
  * (Re)build the screen list from NSScreen.screens. Must run on the main
  * thread while no mode is active.
@@ -235,6 +255,7 @@ static void update_screens()
 		scr->h = frame.size.height;
 
 		scr->visible_frame = NSOffsetRect(screen.visibleFrame, -frame.origin.x, -frame.origin.y);
+		set_screen_id(scr, screen);
 		scr->hud.visible = 0;
 
 		scr->nr_hints = 0;

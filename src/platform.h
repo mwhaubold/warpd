@@ -105,6 +105,15 @@ struct platform {
 				      const char *position, int size, const char *color);
 
 	/*
+	 * A stable identifier for the screen which survives reconnects and
+	 * rearrangement (e.g a display UUID).
+	 */
+	const char *(*screen_get_id)(screen_t scr);
+
+	/* Show or hide a status (menu bar) icon. Only called by the daemon. */
+	void (*init_status_icon)(int enabled);
+
+	/*
 	* Draw operations may (or may not) be queued until this function
 	* is called.
 	*/

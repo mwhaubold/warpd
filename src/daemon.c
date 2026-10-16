@@ -21,6 +21,9 @@ static void reload_config(const char *path)
 	init_hints();
 	init_mouse();
 
+	if (platform->init_status_icon)
+		platform->init_status_icon(config_get_int("menu_bar_icon"));
+
 	for (i = 0; i < sizeof activation_keys / sizeof activation_keys[0]; i++)
 		input_parse_string(&activation_events[i], config_get(activation_keys[i]));
 
