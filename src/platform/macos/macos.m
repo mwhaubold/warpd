@@ -58,40 +58,6 @@ NSFont *macos_get_font(const char *family, int w, int h, const char *s)
 	return cached;
 }
 
-/* Draw s centered in the given (ULO) box, rendering the first typed characters with typed_col. */
-void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
-		     const char *font_family, int x, int y, int w, int h,
-		     const char *s, size_t typed)
-{
-	NSFont *font = macos_get_font(font_family, w, h, s);
-	NSString *str = [NSString stringWithUTF8String:s];
-	NSMutableAttributedString *astr;
-	CGFloat baseline;
-	CGSize size;
-
-	astr = [[NSMutableAttributedString alloc]
-	    initWithString:str
-		attributes:@{
-			NSFontAttributeName : font,
-			NSForegroundColorAttributeName : col,
-			/* Labels are arbitrary letter pairs, never merge them (e.g "fi"). */
-			NSLigatureAttributeName : @0,
-		}];
-
-	typed = MIN(typed, str.length);
-	if (typed && typed_col)
-		[astr addAttribute:NSForegroundColorAttributeName
-			     value:typed_col
-			     range:NSMakeRange(0, typed)];
-
-	size = astr.size;
-
-	/* Center the cap height vertically (LLO). */
-	baseline = (scr->h - y - h / 2.0) - font.capHeight / 2;
-
-	[astr drawAtPoint:NSMakePoint(x + (w - size.width) / 2, baseline + font.descender)];
-}
-
 void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w, float h, float r)
 {
 	[col setFill];
@@ -228,8 +194,9 @@ void osx_commit(void)
 			struct window *win = screens[i].overlay;
 
 			macos_update_hud(&screens[i]);
+			macos_update_hints(&screens[i]);
 
-			if (win->nr_hooks || screens[i].hud.visible)
+			if (macos_screen_needs_overlay(&screens[i]))
 				window_show(win);
 			else
 				window_hide(win);
@@ -268,6 +235,8 @@ static void *mainloop(void *arg)
 		.screen_draw_indicator = osx_screen_draw_indicator,
 		.screen_get_id = osx_screen_get_id,
 		.init_status_icon = osx_init_status_icon,
+		.init_animations = osx_init_animations,
+		.snap_to_element = osx_snap_to_element,
 	};
 
 	main(&platform);

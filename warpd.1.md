@@ -106,6 +106,13 @@ two characters can label, the hints furthest from the pointer get three
 character labels starting with the last characters of *hint_chars*. Set
 *hint_spacing* to 0 for the classic layout.
 
+If *hint_snap* is set (the default on macOS), selecting a hint moves the
+pointer onto the center of a nearby clickable element (e.g a button, link or
+menu item) if there is one within *hint_spacing* of the hint, which is
+briefly outlined. Applications which don't expose their user interface via the
+accessibility API (e.g most Electron and Chromium based ones) are not snapped
+to. Two pass hint mode never snaps.
+
 ## History Mode (';' within normal mode)
 
 Identical to hint mode but exclusively displays hints over previously
@@ -296,6 +303,10 @@ and *hint_font* may be *auto* to follow the system light/dark appearance and use
 the system monospaced font. A mode indicator (see *indicator*) is shown in
 normal, grid and hint mode. Connected, disconnected and rearranged displays are
 picked up automatically.
+
+Hints sweep in from the pointer, hints which no longer match collapse away while
+typing and the selected one pulses. Set *animations* to 0 (or enable Reduce
+Motion in the system settings) to disable this and other animations.
 
 When started from a terminal, macOS checks the accessibility permission of the
 terminal app rather than warpd's. Run warpd as a launchd service (see the

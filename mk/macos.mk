@@ -4,7 +4,7 @@ CFILES=$(shell find src/*.c)
 OBJCFILES=$(shell find src/platform/macos -name '*.m')
 OBJECTS=$(CFILES:.c=.o) $(OBJCFILES:.m=.o)
 
-RELFLAGS=-framework cocoa -framework carbon -framework UniformTypeIdentifiers
+RELFLAGS=-framework cocoa -framework carbon -framework UniformTypeIdentifiers -framework QuartzCore
 
 # Code signing identity. Defaults to the private identity created by
 # `make signing-setup` if present (keeps the Accessibility permission across
@@ -22,7 +22,7 @@ USER_AGENT=$(HOME)/Library/LaunchAgents/com.warpd.warpd.plist
 
 all: $(OBJECTS)
 	-mkdir bin
-	$(CC) -o bin/warpd $(OBJECTS) -framework cocoa -framework carbon -framework UniformTypeIdentifiers
+	$(CC) -o bin/warpd $(OBJECTS) -framework cocoa -framework carbon -framework UniformTypeIdentifiers -framework QuartzCore
 	$(MAKE) sign
 sign:
 	@[ "$(SIGN_IDENTITY)" = "-" ] && echo "Signing ad-hoc (run 'make signing-setup' to keep the Accessibility permission across rebuilds)" || true

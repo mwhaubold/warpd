@@ -33,9 +33,17 @@
 static const NSTimeInterval fade_in_duration = 0.08;
 static const NSTimeInterval fade_out_duration = 0.12;
 
-static int reduce_motion(void)
+static int animations_enabled = 1;
+
+void osx_init_animations(int enabled)
 {
-	return NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
+	animations_enabled = enabled;
+}
+
+/* Whether to animate, honouring both the config and the system's Reduce Motion setting. */
+int macos_animations(void)
+{
+	return animations_enabled && !NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
 }
 
 void window_show(struct window *win)
@@ -44,7 +52,7 @@ void window_show(struct window *win)
 		win->visible = 1;
 		win->generation++; /* Cancel any pending fade out. */
 
-		if (reduce_motion()) {
+		if (!macos_animations()) {
 			win->win.alphaValue = 1;
 		} else {
 			/* Only fade in from scratch, otherwise resume from the current alpha. */
@@ -87,7 +95,7 @@ void window_hide(struct window *win)
 	win->visible = 0;
 	generation = ++win->generation;
 
-	if (reduce_motion()) {
+	if (!macos_animations()) {
 		[win->win orderOut:nil];
 		return;
 	}

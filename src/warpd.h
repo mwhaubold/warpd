@@ -46,6 +46,9 @@
 #endif
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#ifndef MAX
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#endif
 #define MAX_HIST_ENTS 16
 
 #ifdef _MSC_VER

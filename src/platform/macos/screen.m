@@ -188,6 +188,12 @@ void osx_screen_draw_box(struct screen *scr, int x, int y, int w, int h, const c
 	}
 }
 
+/* Whether anything is (or is still being animated) on the screen's overlay. */
+int macos_screen_needs_overlay(struct screen *scr)
+{
+	return scr->overlay->nr_hooks || scr->hud.visible || scr->hints_shown || scr->hint_animations;
+}
+
 void osx_screen_list(struct screen *rscreens[MAX_SCREENS], size_t *n)
 {
 	size_t i;
@@ -200,6 +206,9 @@ void osx_screen_list(struct screen *rscreens[MAX_SCREENS], size_t *n)
 
 void osx_screen_clear(struct screen *scr)
 {
+	if (scr->nr_hints)
+		scr->hints_dirty = 1;
+	scr->nr_hints = 0;
 	scr->hud.visible = 0;
 	scr->nr_boxes = 0;
 	scr->overlay->nr_hooks = 0;
@@ -269,6 +278,8 @@ static void update_screens(void)
 
 		scr->nr_hints = 0;
 		scr->nr_boxes = 0;
+		if (scr->hint_view)
+			macos_reset_hints(scr);
 
 		if (scr->overlay)
 			[scr->overlay->win setFrame:frame display:NO];

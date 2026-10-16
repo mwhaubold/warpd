@@ -120,6 +120,8 @@ static struct {
 
 	{ "screen_chars", "jkl;asdfg", "The characters used for screen selection.", OPT_STRING },
 	{ "screen_remember_position", PLATFORM_DEFAULT("1", "0"), "If set to non-zero, screen selection moves the pointer to where it last was on the selected screen instead of the center (selecting the current screen still centers it).", OPT_INT },
+	{ "hint_snap", PLATFORM_DEFAULT("1", "0"), "If set to non-zero, selecting a hint moves the pointer onto the center of a nearby clickable element (e.g a button) if there is one (macOS only, not used in two pass hint mode).", OPT_INT },
+	{ "animations", "1", "If set to non-zero, animate overlays, e.g hints sweep in from the pointer and fade away while typing (macOS only, also disabled by the system's Reduce Motion setting).", OPT_INT },
 	{ "menu_bar_icon", "1", "If set to non-zero, show a menu bar icon with pause/reload/quit options (macOS only).", OPT_INT },
 
 	{ "scroll_speed", "300", "Initial scroll speed in units/second (unit varies by platform).", OPT_INT },

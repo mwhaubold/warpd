@@ -215,7 +215,11 @@ static size_t generate_fullscreen_hints(screen_t scr, struct hint *hints)
 	return n;
 }
 
-static int hint_selection(screen_t scr, struct hint *_hints, size_t _nr_hints)
+/*
+ * If snap is set, the pointer may be moved onto a nearby clickable UI
+ * element instead of the exact hint position.
+ */
+static int hint_selection(screen_t scr, struct hint *_hints, size_t _nr_hints, int snap)
 {
 	hints = _hints;
 	nr_hints = _nr_hints;
@@ -275,6 +279,13 @@ static int hint_selection(screen_t scr, struct hint *_hints, size_t _nr_hints)
 
 			nx = h->x + h->w / 2;
 			ny = h->y + h->h / 2;
+
+			if (snap && platform->snap_to_element && config_get_int("hint_snap")) {
+				const int spacing = config_get_int("hint_spacing");
+
+				platform->snap_to_element(scr, &nx, &ny,
+							  spacing > 0 ? spacing : MAX(h->w, h->h));
+			}
 
 			/*
 			 * Wiggle the cursor a single pixel to accommodate
@@ -353,7 +364,7 @@ static int sift(void)
 			}
 	}
 
-	return hint_selection(scr, hints, n);
+	return hint_selection(scr, hints, n, 0);
 }
 
 void init_hints(void)
@@ -362,6 +373,9 @@ void init_hints(void)
 			    config_get("hint_fgcolor"),
 			    config_get_int("hint_border_radius"),
 			    config_get("hint_font"));
+
+	if (platform->init_animations)
+		platform->init_animations(config_get_int("animations"));
 }
 
 int hintspec_mode(void)
@@ -391,7 +405,7 @@ int hintspec_mode(void)
 		n++;
 	}
 
-	return hint_selection(scr, hints, n);
+	return hint_selection(scr, hints, n, 0);
 }
 
 int full_hint_mode(int second_pass)
@@ -405,7 +419,7 @@ int full_hint_mode(int second_pass)
 
 	nr_hints = generate_fullscreen_hints(scr, hints);
 
-	if (hint_selection(scr, hints, nr_hints))
+	if (hint_selection(scr, hints, nr_hints, !second_pass))
 		return -1;
 
 	if (second_pass)
@@ -441,5 +455,5 @@ int history_hint_mode(void)
 		hints[i].label[1] = 0;
 	}
 
-	return hint_selection(scr, hints, n);
+	return hint_selection(scr, hints, n, 0);
 }

@@ -113,6 +113,15 @@ struct platform {
 	/* Show or hide a status (menu bar) icon. Only called by the daemon. */
 	void (*init_status_icon)(int enabled);
 
+	/* Enable or disable animations (e.g hints appearing/disappearing). */
+	void (*init_animations)(int enabled);
+
+	/*
+	 * Move x,y (in place) onto the center of a clickable UI element (e.g a
+	 * button) within radius of it. Returns non-zero if it did.
+	 */
+	int (*snap_to_element)(screen_t scr, int *x, int *y, int radius);
+
 	/*
 	* Draw operations may (or may not) be queued until this function
 	* is called.

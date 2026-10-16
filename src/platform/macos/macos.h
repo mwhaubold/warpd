@@ -11,6 +11,7 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include <Cocoa/Cocoa.h>
 #include <Carbon/Carbon.h>
+#include <QuartzCore/QuartzCore.h>
 #include <stdint.h>
 #include <pthread.h>
 
@@ -93,6 +94,14 @@ struct screen {
 		NSColor *color;
 	} hud;
 	NSVisualEffectView *hud_view;
+
+	/* Hint layers (see hint.m), main thread only. */
+	NSView *hint_view;
+	CALayer *hint_root;
+	size_t hints_shown;
+	int hints_dirty;      /* Set by osx_hint_draw()/osx_screen_clear(). */
+	CGPoint hints_center; /* Center of the shown hints (LLO). */
+	int hint_animations; /* Number of hint animations still running. */
 };
 
 
@@ -115,13 +124,16 @@ void macos_sync_screens(void);
 void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w,
 		    float h, float r);
 
-void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
-		     const char *font, int x, int y, int w, int h,
-		     const char *s, size_t typed);
-
 int macos_is_dark(NSView *view);
 NSFont *macos_get_font(const char *family, int w, int h, const char *s);
 void macos_update_hud(struct screen *scr);
+void macos_update_hints(struct screen *scr);
+void macos_reset_hints(struct screen *scr);
+void macos_flash_rect(struct screen *scr, CGRect rect);
+int osx_snap_to_element(struct screen *scr, int *x, int *y, int radius);
+int macos_screen_needs_overlay(struct screen *scr);
+int macos_animations(void);
+void osx_init_animations(int enabled);
 
 void send_key(uint8_t code, int pressed);
 

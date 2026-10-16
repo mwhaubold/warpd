@@ -14,6 +14,10 @@ This fork modernizes the macOS port (other platforms are unchanged):
 - **Hints scale with the screen:** hints are laid out `hint_spacing` points
   apart on every display, so they are as precise on a large external monitor
   as on a laptop screen.
+- **Hint wave and snapping:** hints sweep in from the pointer and the ones
+  that no longer match collapse away while typing (`animations: 0` to turn
+  off). A selected hint snaps the pointer onto the center of a nearby button,
+  link, menu item, etc. (`hint_snap: 0` to turn off).
 - **Menu bar icon:** pause/resume, reload or open the config, quit
   (`menu_bar_icon: 0` hides it).
 - **Per-screen pointer memory:** screen selection returns to where the pointer
