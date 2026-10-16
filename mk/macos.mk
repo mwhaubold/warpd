@@ -56,4 +56,4 @@ uninstall-user:
 	-launchctl bootout gui/$$(id -u) $(USER_AGENT) 2>/dev/null
 	rm -f $(USER_AGENT) $(USER_PREFIX)/bin/warpd $(USER_PREFIX)/share/man/man1/warpd.1.gz
 clean:
-	-rm $(OBJECTS)
+	-rm $(OBJECTS) $(OBJECTS:.o=.d)

@@ -30,7 +30,7 @@ all: $(OBJECTS)
 	-mkdir bin
 	$(CC)  -o bin/warpd $(OBJECTS) $(CFLAGS)
 clean:
-	-rm $(OBJECTS)
+	-rm $(OBJECTS) $(OBJECTS:.o=.d)
 	-rm -r bin
 install:
 	mkdir -p $(DESTDIR)$(PREFIX)/share/man/man1/ $(DESTDIR)$(PREFIX)/bin/
