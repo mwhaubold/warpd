@@ -99,6 +99,13 @@ the author's opinion) superior to grid mode for quickly pinpointing elements.
 For finer movements, a two phase hint mode can be activated by pressing 'X'
 within normal mode.
 
+On macOS hints are laid out *hint_spacing* points apart on every screen (rather
+than spreading the square of the number of *hint_chars* over it), so they are
+equally precise on large and small displays. If a screen needs more hints than
+two characters can label, the hints furthest from the pointer get three
+character labels starting with the last characters of *hint_chars*. Set
+*hint_spacing* to 0 for the classic layout.
+
 ## History Mode (';' within normal mode)
 
 Identical to hint mode but exclusively displays hints over previously
@@ -132,6 +139,11 @@ E.G
 This mode is intended for multi-screen setups and provides the user with a
 dedicated set of hints for switching monitors and dropping them into normal
 mode.
+
+If *screen_remember_position* is set (the default on macOS), the pointer is
+moved to where it last was on the selected screen (recorded when leaving it via
+screen selection) instead of its center. Selecting the current screen centers
+the pointer.
 
 ## Dragging
 
@@ -273,11 +285,32 @@ movement is necessarily pixel based, consequently, drag + hint
 mode can be a superior method for surgically selecting text (though it may at
 first be less intuitive).
 
+# MACOS
+
+warpd shows a menu bar icon (unless *menu_bar_icon* is 0) which can pause and
+resume warpd, reload or open the config file and quit warpd. While paused,
+activation keys are passed through to the focused application.
+
+Colors may be specified as *accent* to use the system accent color, hint colors
+and *hint_font* may be *auto* to follow the system light/dark appearance and use
+the system monospaced font. A mode indicator (see *indicator*) is shown in
+normal, grid and hint mode. Connected, disconnected and rearranged displays are
+picked up automatically.
+
+When started from a terminal, macOS checks the accessibility permission of the
+terminal app rather than warpd's. Run warpd as a launchd service (see the
+README) and grant the installed binary access.
+
 # FILES
 
 *$XDG_CONFIG_HOME/warpd/config*++
 *~/.config/warpd/config*
 	The path of the configuration file (searched in order).
+
+*~/.local/share/warpd/history*++
+*~/.local/share/warpd/screen_positions*
+	Hint history and the last pointer position on each screen (the data
+	directory is $XDG_DATA_DIR/warpd if set).
 
 # EXIT STATUS
 

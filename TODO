@@ -2,7 +2,6 @@
 - create brew formula
 - improve demos
 - cleanup gen_assets.py
-- screen hotplugging
 - accelerator key
 - insert mode
 - cursor centering hacks
