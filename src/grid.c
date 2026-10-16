@@ -84,7 +84,7 @@ static void redraw(int mx, int my, int force)
 }
 
 /* Returns the terminating input event. */
-struct input_event *grid_mode()
+struct input_event *grid_mode(void)
 {
 	int mx, my;
 	struct input_event *ev;

@@ -48,8 +48,8 @@ typedef struct screen *screen_t;
 struct platform {
 	/* Input */
 
-	void (*input_grab_keyboard)();
-	void (*input_ungrab_keyboard)();
+	void (*input_grab_keyboard)(void);
+	void (*input_ungrab_keyboard)(void);
 
 	struct input_event *(*input_next_event)(int timeout);
 	uint8_t (*input_lookup_code)(const char *name, int *shifted);
@@ -69,8 +69,8 @@ struct platform {
 	void (*mouse_click)(int btn);
 
 	void (*mouse_get_position)(screen_t *scr, int *x, int *y);
-	void (*mouse_show)();
-	void (*mouse_hide)();
+	void (*mouse_show)(void);
+	void (*mouse_hide)(void);
 
 	void (*screen_get_dimensions)(screen_t scr, int *w, int *h);
 	void (*screen_draw_box)(screen_t scr, int x, int y, int w, int h, const char *color);
@@ -90,7 +90,7 @@ struct platform {
 
 	void (*scroll)(int direction);
 
-	void (*copy_selection)();
+	void (*copy_selection)(void);
 
 	/*
 	 * Optional (may be NULL), platforms which don't provide these fall
@@ -117,7 +117,7 @@ struct platform {
 	* Draw operations may (or may not) be queued until this function
 	* is called.
 	*/
-	void (*commit)();
+	void (*commit)(void);
 };
 
 void platform_run(int (*main) (struct platform *platform));

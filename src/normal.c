@@ -145,11 +145,11 @@ struct input_event *normal_mode(struct input_event *start_ev, int oneshot)
 		platform->mouse_get_position(&scr, &mx, &my);
 
 		if (!system_cursor && on_time) {
-			if (show_cursor && (time - last_blink_update) >= on_time) {
+			if (show_cursor && (time - last_blink_update) >= (uint64_t)on_time) {
 				show_cursor = 0;
 				redraw(scr, mx, my, !show_cursor);
 				last_blink_update = time;
-			} else if (!show_cursor && (time - last_blink_update) >= off_time) {
+			} else if (!show_cursor && (time - last_blink_update) >= (uint64_t)off_time) {
 				show_cursor = 1;
 				redraw(scr, mx, my, !show_cursor);
 				last_blink_update = time;

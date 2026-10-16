@@ -14,7 +14,7 @@ static struct input_event activation_events[sizeof activation_keys / sizeof acti
 
 static void reload_config(const char *path)
 {
-	int i;
+	size_t i;
 
 	parse_config(path);
 
@@ -31,9 +31,6 @@ static void reload_config(const char *path)
 
 void daemon_loop(const char *config_path)
 {
-	size_t i;
-
-
 	platform->monitor_file(config_path);
 	reload_config(config_path);
 

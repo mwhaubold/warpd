@@ -355,7 +355,7 @@ int config_input_match(struct input_event *ev, const char *config_key)
 	return 0;
 }
 
-void config_print_options()
+void config_print_options(void)
 {
 	size_t i;
 	for (i = 0; i < sizeof(options)/sizeof(options[0]); i++)

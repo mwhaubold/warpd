@@ -45,7 +45,7 @@ static int tonum(uint8_t code)
 	return name[0] - '0';
 }
 
-static void update_cursor_position()
+static void update_cursor_position(void)
 {
 	int ix, iy;
 
@@ -56,7 +56,7 @@ static void update_cursor_position()
 	cy = (double)iy;
 }
 
-static void tick()
+static void tick(void)
 {
 	static long last_update = 0;
 
@@ -176,26 +176,26 @@ int mouse_process_key(struct input_event *ev,
 	return ret;
 }
 
-void mouse_fast()
+void mouse_fast(void)
 {
 	a = a1;
 }
 
-void mouse_normal()
+void mouse_normal(void)
 {
 	v = v0;
 	a = a0;
 	mode_slow = 0;
 }
 
-void mouse_slow()
+void mouse_slow(void)
 {
 	v = vd;
 	a = 0;
 	mode_slow = 1;
 }
 
-void mouse_reset()
+void mouse_reset(void)
 {
 	opnum = 0;
 	left = 0;
@@ -210,7 +210,7 @@ void mouse_reset()
 	tick();
 }
 
-void init_mouse()
+void init_mouse(void)
 {
 	inc = 15; // TODO: make this configurable
 

@@ -299,7 +299,7 @@ static int hint_selection(screen_t scr, struct hint *_hints, size_t _nr_hints)
 	return rc;
 }
 
-static int sift()
+static int sift(void)
 {
 	int gap = config_get_int("hint2_gap_size");
 	int hint_sz = config_get_int("hint2_size");
@@ -356,7 +356,7 @@ static int sift()
 	return hint_selection(scr, hints, n);
 }
 
-void init_hints()
+void init_hints(void)
 {
 	platform->init_hint(config_get("hint_bgcolor"),
 			    config_get("hint_fgcolor"),
@@ -364,7 +364,7 @@ void init_hints()
 			    config_get("hint_font"));
 }
 
-int hintspec_mode()
+int hintspec_mode(void)
 {
 	screen_t scr;
 	int sw, sh;
@@ -414,7 +414,7 @@ int full_hint_mode(int second_pass)
 		return 0;
 }
 
-int history_hint_mode()
+int history_hint_mode(void)
 {
 	struct hint hints[MAX_HINTS];
 	struct histfile_ent *ents;

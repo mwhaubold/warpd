@@ -89,16 +89,16 @@ struct histfile_ent {
 
 extern char last_selected_hint[32];
 
-int hintspec_mode();
-int history_hint_mode();
+int hintspec_mode(void);
+int history_hint_mode(void);
 int full_hint_mode(int second_pass);
-void screen_selection_mode();
-struct input_event *grid_mode();
+void screen_selection_mode(void);
+struct input_event *grid_mode(void);
 struct input_event *normal_mode(struct input_event *start_ev, int oneshot);
 
-void init_hints();
-void init_normal_mode();
-void init_grid_mode();
+void init_hints(void);
+void init_normal_mode(void);
+void init_grid_mode(void);
 
 void config_input_whitelist(const char *names[], size_t n);
 
@@ -113,26 +113,26 @@ int mouse_process_key(struct input_event *ev, const char *up_key,
 		      const char *down_key, const char *left_key,
 		      const char *right_key);
 
-void mouse_reset();
-void mouse_fast();
-void mouse_normal();
-void mouse_slow();
+void mouse_reset(void);
+void mouse_fast(void);
+void mouse_normal(void);
+void mouse_slow(void);
 
-void scroll_tick();
-void scroll_stop();
+void scroll_tick(void);
+void scroll_stop(void);
 void scroll_accelerate(int direction);
-void scroll_decelerate();
+void scroll_decelerate(void);
 
 void hist_add(int x, int y);
 int hist_get(int *x, int *y);
-void hist_prev();
-void hist_next();
+void hist_prev(void);
+void hist_next(void);
 
 
 size_t histfile_read(struct histfile_ent **entries);
 void histfile_add(int x, int y);
 
-void init_mouse();
+void init_mouse(void);
 void draw_indicator(screen_t scr, const char *mode);
 
 const char *get_config_path(const char *file);
@@ -140,9 +140,9 @@ const char *get_data_path(const char *file);
 void parse_config(const char *path);
 const char *config_get(const char *key);
 int config_get_int(const char *key);
-void config_print_options();
+void config_print_options(void);
 
-uint64_t get_time_us();
+uint64_t get_time_us(void);
 
 extern struct config_entry *config;
 

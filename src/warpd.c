@@ -10,7 +10,7 @@ struct platform *platform = NULL;
 
 static const char *config_path;
 
-uint64_t get_time_us()
+uint64_t get_time_us(void)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -62,7 +62,7 @@ const char *get_config_path(const char *file)
 }
 
 
-static void lock()
+static void lock(void)
 {
 	int fd;
 	char path[64];
@@ -83,7 +83,7 @@ static void lock()
 	}
 }
 
-static void daemonize()
+static void daemonize(void)
 {
 	if (fork())
 		exit(0);
@@ -103,7 +103,7 @@ static void daemonize()
 	dup2(fd, 2);
 }
 
-static void print_usage()
+static void print_usage(void)
 {
 	const char *usage =
 		"warpd: [options]\n\n"
@@ -129,7 +129,7 @@ static void print_usage()
 	printf("%s", usage);
 }
 
-static void print_version()
+static void print_version(void)
 {
 	printf("warpd " VERSION"\n");
 }

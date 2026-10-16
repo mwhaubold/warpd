@@ -41,7 +41,7 @@ static void add(int x, int y)
 	hist.full = hist.head == hist.tail;
 }
 
-static void truncate_hist()
+static void truncate_hist(void)
 {
 	if (!hist.full && hist.tail == hist.head)
 		return;
@@ -72,7 +72,7 @@ void hist_add(int x, int y)
 	add(x, y);
 }
 
-void hist_prev()
+void hist_prev(void)
 {
 	if (!hist.full && hist.tail == hist.head)
 		return;
@@ -83,7 +83,7 @@ void hist_prev()
 	hist.cur = hist.cur == 0 ? BUF_SZ - 1 : hist.cur - 1;
 }
 
-void hist_next()
+void hist_next(void)
 {
 	if (!hist.full && hist.tail == hist.head)
 		return;

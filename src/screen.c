@@ -24,7 +24,7 @@ static const char *screen_id(screen_t scr, size_t idx)
 	return buf;
 }
 
-static void read_positions()
+static void read_positions(void)
 {
 	FILE *fh = fopen(get_data_path("screen_positions"), "r");
 
@@ -44,7 +44,7 @@ static void read_positions()
 	fclose(fh);
 }
 
-static void write_positions()
+static void write_positions(void)
 {
 	size_t i;
 	FILE *fh = fopen(get_data_path("screen_positions"), "w");
@@ -88,7 +88,7 @@ static void save_position(const char *id, int x, int y)
 	p->y = y;
 }
 
-void screen_selection_mode()
+void screen_selection_mode(void)
 {
 	size_t i;
 	size_t n;

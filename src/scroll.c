@@ -31,7 +31,7 @@ static int direction = 0;
 
 static long traveled = 0; /* scroll units emitted. */
 
-void scroll_tick()
+void scroll_tick(void)
 {
 	int i;
 	/* Non zero to provide the illusion of continuous scrolling */
@@ -60,7 +60,7 @@ void scroll_tick()
 	traveled = (long)d;
 }
 
-void scroll_stop()
+void scroll_stop(void)
 {
 	v = 0;
 	a = 0;
@@ -68,7 +68,7 @@ void scroll_stop()
 	d = 0;
 }
 
-void scroll_decelerate()
+void scroll_decelerate(void)
 {
 	a = da0;
 }
@@ -85,7 +85,7 @@ void scroll_accelerate(int _direction)
 	}
 }
 
-void scroll_impart_impulse()
+void scroll_impart_impulse(void)
 {
 	v += fling_velocity;
 }
