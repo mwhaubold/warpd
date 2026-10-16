@@ -26,6 +26,9 @@ works.
 
 ## 3. Download and build
 
+> Already have warpd installed? Remove it first, see
+> [Replacing an existing warpd installation](#replacing-an-existing-warpd-installation).
+
 ```
 git clone https://github.com/mwhaubold/warpd.git ~/warpd
 cd ~/warpd
@@ -101,19 +104,33 @@ Then remove warpd from System Settings → Privacy & Security → Accessibility.
 To also remove the signing identity, delete the `warpd-dev` certificate and key
 in Keychain Access (login keychain → My Certificates).
 
-## Replacing an upstream installation
+## Replacing an existing warpd installation
 
-If the Mac has the official warpd release (or a `sudo make install` build)
-installed, remove it first so two copies don't compete for the same keys:
+If the Mac already has warpd installed system-wide (the official release from
+rvaiya/warpd, or a `sudo make install` build), remove it **before step 3**.
+Both versions use the same launchd service name and the same lock file, so
+only one of them can run: the other keeps getting restarted in the
+background, and after a reboot it isn't predictable which one wins.
+`make install-user` checks for this and stops with the commands below if it
+finds an existing installation.
 
-```
-launchctl unload /Library/LaunchAgents/com.warpd.warpd.plist
-sudo rm /usr/local/bin/warpd /usr/local/share/man/man1/warpd.1.gz /Library/LaunchAgents/com.warpd.warpd.plist
-```
+1. Stop and remove the old version:
 
-Also remove its entry from the Accessibility list. The official releases are
-signed with a certificate whose private key is public, so any program signed
-with it would inherit that permission.
+   ```
+   launchctl bootout gui/$(id -u)/com.warpd.warpd
+   sudo rm -f /usr/local/bin/warpd /usr/local/share/man/man1/warpd.1.gz /Library/LaunchAgents/com.warpd.warpd.plist
+   ```
+
+   (`launchctl bootout` may report that the service isn't loaded, that's
+   fine.)
+
+2. Remove its entry (`/usr/local/bin/warpd`) from System Settings → Privacy &
+   Security → Accessibility using the **−** button. The official releases are
+   signed with a certificate whose private key is public, so any program signed
+   with it would inherit that permission.
+
+3. Continue with step 3 above. Your configuration (`~/.config/warpd/config`)
+   and hint history stay where they are and work with the new version as is.
 
 ## Troubleshooting
 

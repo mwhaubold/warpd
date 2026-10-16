@@ -1,4 +1,4 @@
-.PHONY: rel all install clean sign signing-setup install-user uninstall-user
+.PHONY: rel all install clean sign signing-setup install-user uninstall-user check-no-system-install
 
 CFILES=$(shell find src/*.c)
 OBJCFILES=$(shell find src/platform/macos -name '*.m')
@@ -19,6 +19,11 @@ OBJCFLAGS=-fobjc-arc
 
 USER_PREFIX?=$(HOME)/.local
 USER_AGENT=$(HOME)/Library/LaunchAgents/com.warpd.warpd.plist
+
+# A system-wide installation (official release or `sudo make install`) uses
+# the same launchd label and lock file, so the two would fight over which one runs.
+SYSTEM_BIN?=/usr/local/bin/warpd
+SYSTEM_AGENT?=/Library/LaunchAgents/com.warpd.warpd.plist
 
 all: $(OBJECTS)
 	-mkdir bin
@@ -51,13 +56,24 @@ uninstall:
 		$(DESTDIR)/usr/local/bin/warpd \
 		$(DESTDIR)/Library/LaunchAgents/com.warpd.warpd.plist
 # Per-user install, no sudo required. (Re)starts the warpd agent.
-install-user:
+install-user: check-no-system-install
 	mkdir -p $(USER_PREFIX)/bin $(USER_PREFIX)/share/man/man1 $(HOME)/Library/LaunchAgents
 	install -m644 files/warpd.1.gz $(USER_PREFIX)/share/man/man1
 	install -m755 bin/warpd $(USER_PREFIX)/bin/
 	sed 's|/usr/local/bin/warpd|$(USER_PREFIX)/bin/warpd|' files/com.warpd.warpd.plist > $(USER_AGENT)
 	-launchctl bootout gui/$$(id -u) $(USER_AGENT) 2>/dev/null
 	launchctl bootstrap gui/$$(id -u) $(USER_AGENT)
+check-no-system-install:
+	@if [ -e $(SYSTEM_BIN) ] || [ -e $(SYSTEM_AGENT) ]; then \
+		echo "ERROR: warpd is already installed system-wide ($(SYSTEM_BIN) or $(SYSTEM_AGENT))," >&2; \
+		echo "e.g the official release. It would compete with this installation, remove it first:" >&2; \
+		echo "" >&2; \
+		echo "  launchctl bootout gui/$$(id -u)/com.warpd.warpd" >&2; \
+		echo "  sudo rm -f $(SYSTEM_BIN) /usr/local/share/man/man1/warpd.1.gz $(SYSTEM_AGENT)" >&2; \
+		echo "" >&2; \
+		echo "and remove its entry from System Settings > Privacy & Security > Accessibility." >&2; \
+		exit 1; \
+	fi
 uninstall-user:
 	-launchctl bootout gui/$$(id -u) $(USER_AGENT) 2>/dev/null
 	rm -f $(USER_AGENT) $(USER_PREFIX)/bin/warpd $(USER_PREFIX)/share/man/man1/warpd.1.gz
