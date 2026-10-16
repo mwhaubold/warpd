@@ -33,7 +33,7 @@
 static const NSTimeInterval fade_in_duration = 0.08;
 static const NSTimeInterval fade_out_duration = 0.12;
 
-static int reduce_motion()
+static int reduce_motion(void)
 {
 	return NSWorkspace.sharedWorkspace.accessibilityDisplayShouldReduceMotion;
 }

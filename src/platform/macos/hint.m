@@ -222,9 +222,12 @@ void osx_hint_draw(struct screen *scr, struct hint *hints, size_t n)
 void osx_init_hint(const char *bg, const char *fg, int _border_radius,
 	       const char *font_family)
 {
-	bgColor = macos_color(bg);
-	fgColor = macos_color(fg);
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		bgColor = macos_color(bg);
+		fgColor = macos_color(fg);
 
-	border_radius = (float)_border_radius;
-	font = font_family;
+		border_radius = (float)_border_radius;
+		font = font_family;
+	}
 }

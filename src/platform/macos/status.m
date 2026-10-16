@@ -13,7 +13,7 @@ static NSStatusItem *item;
 static NSMenuItem *pause_item;
 static int paused;
 
-static void update_status()
+static void update_status(void)
 {
 	NSString *symbol = paused ? @"cursorarrow.slash" : @"cursorarrow.rays";
 	NSImage *img = [NSImage imageWithSystemSymbolName:symbol
@@ -104,10 +104,8 @@ void osx_init_status_icon(int enabled)
 		NSMenu *menu;
 
 		if (!enabled) {
-			if (item) {
+			if (item)
 				[NSStatusBar.systemStatusBar removeStatusItem:item];
-				[item release];
-			}
 			item = nil;
 			return;
 		}
@@ -127,10 +125,8 @@ void osx_init_status_icon(int enabled)
 		[menu addItem:NSMenuItem.separatorItem];
 		add_item(menu, @"Quit warpd", @selector(quit:), @"");
 
-		/* Not compiled with ARC: retain past the current autorelease pool. */
-		item = [[NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength] retain];
+		item = [NSStatusBar.systemStatusBar statusItemWithLength:NSSquareStatusItemLength];
 		item.menu = menu;
-		[menu release];
 
 		update_status();
 	});

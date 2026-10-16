@@ -20,7 +20,8 @@ void osx_monitor_file(const char *_path)
 						    encoding:NSUTF8StringEncoding];
 
 
-		CFArrayRef paths = CFArrayCreate(NULL, (void**)&path, 1, NULL);
+		const void *path_ref = (__bridge const void *)path;
+		CFArrayRef paths = CFArrayCreate(NULL, &path_ref, 1, &kCFTypeArrayCallBacks);
 		FSEventStreamContext context;
 
 		context.version = 0;
@@ -34,6 +35,7 @@ void osx_monitor_file(const char *_path)
 		    kFSEventStreamEventIdSinceNow, 3.0,
 		    kFSEventStreamCreateFlagFileEvents |
 			kFSEventStreamCreateFlagWatchRoot);
+		CFRelease(paths);
 
 		FSEventStreamScheduleWithRunLoop(stream, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
 		FSEventStreamStart(stream);

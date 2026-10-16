@@ -44,9 +44,7 @@ NSFont *macos_get_font(const char *family, int w, int h, const char *s)
 		font = [NSFont fontWithDescriptor:font.fontDescriptor
 					     size:h * 0.5 / (font.capHeight / font.pointSize)];
 
-		/* Not compiled with ARC: keep the font alive beyond the current autorelease pool. */
-		[cached release];
-		cached = [font retain];
+		cached = font;
 		cached_mwidth = [@"m" sizeWithAttributes:@{NSFontAttributeName : font}].width;
 		snprintf(cached_family, sizeof cached_family, "%s", family);
 		cached_h = h;
@@ -112,16 +110,32 @@ void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w,
 /*
  * Like nscolor_from_hex(), but also understands "accent" (the system accent
  * color). Returns nil for "auto", leaving the choice to the caller.
+ *
+ * Colors are cached by name: they are assigned on the warpd thread on every
+ * redraw while the main thread may still be drawing with the previous one,
+ * so they must never be deallocated (and it saves an allocation per redraw).
  */
 NSColor *macos_color(const char *str)
 {
+	static NSMutableDictionary<NSString *, NSColor *> *cache;
+	NSString *key;
+	NSColor *color;
+
 	if (!strcmp(str, "auto"))
 		return nil;
 
-	if (!strcmp(str, "accent"))
-		return NSColor.controlAccentColor;
+	@synchronized([NSColor class]) {
+		if (!cache)
+			cache = [NSMutableDictionary dictionary];
 
-	return nscolor_from_hex(str);
+		key = [NSString stringWithUTF8String:str];
+		if (!(color = cache[key])) {
+			color = !strcmp(str, "accent") ? NSColor.controlAccentColor : nscolor_from_hex(str);
+			cache[key] = color;
+		}
+	}
+
+	return color;
 }
 
 
@@ -167,7 +181,7 @@ NSColor *nscolor_from_hex(const char *str)
 					 alpha:(float)a / 255];
 }
 
-void osx_copy_selection()
+void osx_copy_selection(void)
 {
 	int shifted;
 
@@ -179,30 +193,34 @@ void osx_copy_selection()
 
 void osx_scroll(int direction)
 {
-	int y = 0;
-	int x = 0;
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		int y = 0;
+		int x = 0;
 
-	switch (direction) {
-	case SCROLL_UP:
-		y = 1;
-		break;
-	case SCROLL_DOWN:
-		y = -1;
-		break;
-	case SCROLL_RIGHT:
-		x = -1;
-		break;
-	case SCROLL_LEFT:
-		x = 1;
-		break;
+		switch (direction) {
+		case SCROLL_UP:
+			y = 1;
+			break;
+		case SCROLL_DOWN:
+			y = -1;
+			break;
+		case SCROLL_RIGHT:
+			x = -1;
+			break;
+		case SCROLL_LEFT:
+			x = 1;
+			break;
+		}
+
+		CGEventRef ev = CGEventCreateScrollWheelEvent(
+		    NULL, kCGScrollEventUnitPixel, 2, y, x);
+		CGEventPost(kCGHIDEventTap, ev);
+		CFRelease(ev);
 	}
-
-	CGEventRef ev = CGEventCreateScrollWheelEvent(
-	    NULL, kCGScrollEventUnitPixel, 2, y, x);
-	CGEventPost(kCGHIDEventTap, ev);
 }
 
-void osx_commit()
+void osx_commit(void)
 {
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		size_t i;

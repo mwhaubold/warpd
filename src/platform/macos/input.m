@@ -42,7 +42,7 @@ struct mod {
     {PLATFORM_MOD_ALT, 59, 62},
 };
 
-static long get_time_ms()
+static long get_time_ms(void)
 {
 	struct timespec ts;
 	clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -80,7 +80,7 @@ void osx_input_set_paused(int _paused)
 	paused = _paused;
 }
 
-void osx_input_interrupt()
+void osx_input_interrupt(void)
 {
 	struct input_event ev = {0};
 	write_message(input_fds[1], &ev, sizeof ev);
@@ -90,7 +90,7 @@ void osx_input_interrupt()
  * Like osx_input_interrupt(), but tells osx_input_wait() to resynchronize
  * the screen list instead of returning NULL (which triggers a config reload).
  */
-void osx_input_interrupt_screen_change()
+void osx_input_interrupt_screen_change(void)
 {
 	struct input_event ev = {0};
 	ev.pressed = 1;
@@ -117,9 +117,10 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
 	}
 
 	/* If only apple designed its system APIs like its macbooks... */
+	NSEvent *nsev;
+	CGEventFlags flags;
+
 	switch (type) {
-		NSEvent *nsev;
-		CGEventFlags flags;
 
 	case NX_SYSDEFINED: /* system codes (e.g brightness) */
 		nsev = [NSEvent eventWithCGEvent:event];
@@ -304,14 +305,14 @@ void send_key(uint8_t code, int pressed)
 	});
 }
 
-void osx_input_ungrab_keyboard()
+void osx_input_ungrab_keyboard(void)
 {
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		grabbed = 0;
 	});
 }
 
-void osx_input_grab_keyboard()
+void osx_input_grab_keyboard(void)
 {
 	if (grabbed)
 		return;
@@ -372,7 +373,7 @@ struct input_event *osx_input_wait(struct input_event *keys, size_t sz)
 	}
 }
 
-static void update_keymap()
+static void update_keymap(void)
 {
 	static uint8_t valid_keycodes[256] = {
 		[0x01] = 1, [0x02] = 1, [0x03] = 1, [0x04] = 1, [0x05] = 1, [0x06] = 1, [0x07] = 1, [0x08] = 1,
@@ -496,11 +497,18 @@ static void update_keymap()
 }
 
 /* Called by the main thread to set up event stream. */
-void macos_init_input()
+static void keyboard_layout_changed(CFNotificationCenterRef center, void *observer,
+				    CFNotificationName name, const void *object,
+				    CFDictionaryRef info)
+{
+	update_keymap();
+}
+
+void macos_init_input(void)
 {
 	/* Request accessibility access if not present. */
-	NSDictionary *options = @{(id)kAXTrustedCheckOptionPrompt : @YES};
-	BOOL access = AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
+	NSDictionary *options = @{(__bridge id)kAXTrustedCheckOptionPrompt : @YES};
+	BOOL access = AXIsProcessTrustedWithOptions((__bridge CFDictionaryRef)options);
 
 	if (!access) {
 		printf("Waiting for accessibility permissions\n");
@@ -545,7 +553,7 @@ void macos_init_input()
 	CGEventTapEnable(tap, true);
 
 	CFNotificationCenterAddObserver(
-	    CFNotificationCenterGetLocalCenter(), NULL, update_keymap,
+	    CFNotificationCenterGetLocalCenter(), NULL, keyboard_layout_changed,
 	    CFSTR("NSTextInputContextKeyboardSelectionDidChangeNotification"),
 	    NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 

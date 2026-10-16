@@ -11,6 +11,12 @@ RELFLAGS=-framework cocoa -framework carbon -framework UniformTypeIdentifiers
 # rebuilds), otherwise ad-hoc signing ('-').
 SIGN_IDENTITY?=$(shell security find-certificate -c warpd-dev >/dev/null 2>&1 && echo warpd-dev || echo -)
 
+# The Objective-C code uses automatic reference counting.
+OBJCFLAGS=-fobjc-arc
+
+%.o: %.m Makefile mk/*.mk
+	$(CC) -c $< -o $@ $(CFLAGS) $(OBJCFLAGS)
+
 USER_PREFIX?=$(HOME)/.local
 USER_AGENT=$(HOME)/Library/LaunchAgents/com.warpd.warpd.plist
 
@@ -24,8 +30,8 @@ sign:
 signing-setup:
 	./codesign/setup-identity.sh
 rel: clean
-	$(CC) -o bin/warpd-arm $(CFILES) $(OBJCFILES) -target arm64-apple-macos $(CFLAGS) $(RELFLAGS)
-	$(CC) -o bin/warpd-x86  $(CFILES) $(OBJCFILES) -target x86_64-apple-macos $(CFLAGS) $(RELFLAGS)
+	$(CC) -o bin/warpd-arm $(CFILES) $(OBJCFILES) -target arm64-apple-macos $(CFLAGS) $(OBJCFLAGS) $(RELFLAGS)
+	$(CC) -o bin/warpd-x86  $(CFILES) $(OBJCFILES) -target x86_64-apple-macos $(CFLAGS) $(OBJCFLAGS) $(RELFLAGS)
 	lipo -create bin/warpd-arm bin/warpd-x86 -output bin/warpd && rm -r bin/warpd-*
 	$(MAKE) sign
 	-rm -rf tmp dist

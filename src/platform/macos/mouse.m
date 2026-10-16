@@ -23,7 +23,7 @@ static int dragging = 0;
 
 static CursorHider *hider = NULL;
 
-static long get_time_ms()
+static long get_time_ms(void)
 {
 	struct timespec ts;
 
@@ -132,85 +132,92 @@ void osx_mouse_down(int btn)
 
 void osx_mouse_get_position(struct screen **_scr, int *_x, int *_y)
 {
-	size_t i;
-	NSPoint loc = [NSEvent mouseLocation];
-	int x = loc.x;
-	int y = loc.y;
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		size_t i;
+		NSPoint loc = [NSEvent mouseLocation];
+		int x = loc.x;
+		int y = loc.y;
 
-	struct screen *scr = &screens[0];
-	long best = -1;
+		struct screen *scr = &screens[0];
+		long best = -1;
 
-	/*
-	 * Pick the screen containing the pointer, or failing that (e.g the
-	 * display configuration changed under us), the nearest one.
-	 */
-	for (i = 0; i < nr_screens; i++) {
-		long dx = 0, dy = 0, dist;
+		/*
+		 * Pick the screen containing the pointer, or failing that (e.g the
+		 * display configuration changed under us), the nearest one.
+		 */
+		for (i = 0; i < nr_screens; i++) {
+			long dx = 0, dy = 0, dist;
 
-		if (x < screens[i].x)
-			dx = screens[i].x - x;
-		else if (x > screens[i].x + screens[i].w)
-			dx = x - (screens[i].x + screens[i].w);
+			if (x < screens[i].x)
+				dx = screens[i].x - x;
+			else if (x > screens[i].x + screens[i].w)
+				dx = x - (screens[i].x + screens[i].w);
 
-		if (y < screens[i].y)
-			dy = screens[i].y - y;
-		else if (y > screens[i].y + screens[i].h)
-			dy = y - (screens[i].y + screens[i].h);
+			if (y < screens[i].y)
+				dy = screens[i].y - y;
+			else if (y > screens[i].y + screens[i].h)
+				dy = y - (screens[i].y + screens[i].h);
 
-		dist = dx*dx + dy*dy;
-		if (best < 0 || dist < best) {
-			best = dist;
-			scr = &screens[i];
+			dist = dx*dx + dy*dy;
+			if (best < 0 || dist < best) {
+				best = dist;
+				scr = &screens[i];
+			}
+
+			if (dist == 0)
+				break;
 		}
 
-		if (dist == 0)
-			break;
+		x -= scr->x;
+		y -= scr->y;
+
+		y = scr->h - y;
+
+		/* Clamp in case we fell back to a screen which doesn't contain the pointer. */
+		x = x < 0 ? 0 : (x > scr->w ? scr->w : x);
+		y = y < 0 ? 0 : (y > scr->h ? scr->h : y);
+
+		if (_x)
+			*_x = x;
+		if (_y)
+			*_y = y;
+		if (_scr)
+			*_scr = scr;
 	}
-
-	x -= scr->x;
-	y -= scr->y;
-
-	y = scr->h - y;
-
-	/* Clamp in case we fell back to a screen which doesn't contain the pointer. */
-	x = x < 0 ? 0 : (x > scr->w ? scr->w : x);
-	y = y < 0 ? 0 : (y > scr->h ? scr->h : y);
-
-	if (_x)
-		*_x = x;
-	if (_y)
-		*_y = y;
-	if (_scr)
-		*_scr = scr;
 }
 
 void osx_mouse_move(struct screen *scr, int x, int y)
 {
-	const int type = dragging ? kCGEventLeftMouseDragged : kCGEventMouseMoved;
-	int cgx, cgy;
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		const int type = dragging ? kCGEventLeftMouseDragged : kCGEventMouseMoved;
+		int cgx, cgy;
 
-	x += scr->x;
-	y = scr->y + scr->h - y;
+		x += scr->x;
+		y = scr->y + scr->h - y;
 
-	/*
-	 * CGEvents use a different coordinate system, so we have to convert between the
-	 * two.
-	 */
+		/*
+		 * CGEvents use a different coordinate system, so we have to convert between the
+		 * two.
+		 */
 
-	NSPoint nspos = [NSEvent mouseLocation]; //LLO global coordinate system
-	CGEventRef CGEv = CGEventCreate(NULL);
-	CGPoint cgpos = CGEventGetLocation(CGEv); //ULO global coordinate system :(
+		NSPoint nspos = [NSEvent mouseLocation]; //LLO global coordinate system
+		CGEventRef CGEv = CGEventCreate(NULL);
+		CGPoint cgpos = CGEventGetLocation(CGEv); //ULO global coordinate system :(
+		CFRelease(CGEv);
 
-	cgx = x - nspos.x + cgpos.x;
-	cgy = cgpos.y - (y - nspos.y);
+		cgx = x - nspos.x + cgpos.x;
+		cgy = cgpos.y - (y - nspos.y);
 
-	CGEventRef ev =
-	    CGEventCreateMouseEvent(NULL, type, CGPointMake(cgx, cgy), 0);
-	CGEventPost(kCGHIDEventTap, ev);
-	CFRelease(ev);
+		CGEventRef ev =
+		    CGEventCreateMouseEvent(NULL, type, CGPointMake(cgx, cgy), 0);
+		CGEventPost(kCGHIDEventTap, ev);
+		CFRelease(ev);
+	}
 }
 
-void osx_mouse_hide()
+void osx_mouse_hide(void)
 {
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		if (hider_timer)
@@ -229,7 +236,7 @@ void osx_mouse_hide()
 	});
 }
 
-void osx_mouse_show()
+void osx_mouse_show(void)
 {
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		int i;
@@ -248,7 +255,7 @@ void osx_mouse_show()
 	});
 }
 
-void macos_init_mouse()
+void macos_init_mouse(void)
 {
 	/*
 	 * Kludge to make background cursor setting work.
@@ -258,7 +265,7 @@ void macos_init_mouse()
 	 */
 
 	void CGSSetConnectionProperty(int, int, CFStringRef, CFBooleanRef);
-	int _CGSDefaultConnection();
+	int _CGSDefaultConnection(void);
 	CFStringRef propertyString;
 
 	propertyString = CFStringCreateWithCString(

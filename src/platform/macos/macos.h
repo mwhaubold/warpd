@@ -107,10 +107,10 @@ void window_register_draw_hook(struct window *win,
 struct window *create_window(const char *color, size_t w, size_t h);
 struct window *create_overlay_window(int x, int y, int w, int h);
 
-void macos_init_input();
-void macos_init_mouse();
-void macos_init_screen();
-void macos_sync_screens();
+void macos_init_input(void);
+void macos_init_mouse(void);
+void macos_init_screen(void);
+void macos_sync_screens(void);
 
 void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w,
 		    float h, float r);
@@ -132,8 +132,8 @@ extern struct screen screens[MAX_SCREENS];
 extern size_t nr_screens;
 extern uint8_t active_mods;
 
-void osx_input_grab_keyboard();
-void osx_input_ungrab_keyboard();
+void osx_input_grab_keyboard(void);
+void osx_input_ungrab_keyboard(void);
 struct input_event *osx_input_next_event(int timeout);
 uint8_t osx_input_lookup_code(const char *name, int *shifted);
 const char *osx_input_lookup_name(uint8_t code, int shifted);
@@ -143,8 +143,8 @@ void osx_mouse_down(int btn);
 void osx_mouse_up(int btn);
 void osx_mouse_click(int btn);
 void osx_mouse_get_position(screen_t *scr, int *x, int *y);
-void osx_mouse_show();
-void osx_mouse_hide();
+void osx_mouse_show(void);
+void osx_mouse_hide(void);
 void osx_screen_get_dimensions(screen_t scr, int *w, int *h);
 void osx_screen_draw_box(screen_t scr, int x, int y, int w, int h, const char *color);
 void osx_screen_clear(screen_t scr);
@@ -154,16 +154,16 @@ void osx_screen_list(screen_t scr[MAX_SCREENS], size_t *n);
 void osx_init_hint(const char *bg, const char *fg, int border_radius, const char *font_family);
 void osx_hint_draw(struct screen *scr, struct hint *hints, size_t n);
 void osx_scroll(int direction);
-void osx_copy_selection();
+void osx_copy_selection(void);
 void osx_monitor_file(const char *_path);
-void osx_input_interrupt();
-void osx_input_interrupt_screen_change();
+void osx_input_interrupt(void);
+void osx_input_interrupt_screen_change(void);
 void osx_input_set_paused(int paused);
 const char *osx_screen_get_id(screen_t scr);
 void osx_init_status_icon(int enabled);
 
 /* The config file being monitored (if any). */
 extern const char *macos_config_path;
-void osx_commit();
+void osx_commit(void);
 
 #endif

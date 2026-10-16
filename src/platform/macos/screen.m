@@ -65,21 +65,27 @@ static void cursor_draw_hook(void *arg, NSView *view)
 
 void osx_screen_draw_cursor(struct screen *scr, int x, int y, int size, const char *color)
 {
-	scr->cursor.x = x;
-	scr->cursor.y = y;
-	scr->cursor.size = size;
-	scr->cursor.color = color_or_accent(color);
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		scr->cursor.x = x;
+		scr->cursor.y = y;
+		scr->cursor.size = size;
+		scr->cursor.color = color_or_accent(color);
 
-	window_register_draw_hook(scr->overlay, cursor_draw_hook, scr);
+		window_register_draw_hook(scr->overlay, cursor_draw_hook, scr);
+	}
 }
 
 void osx_screen_draw_indicator(struct screen *scr, const char *mode, const char *position, int size, const char *color)
 {
-	scr->hud.visible = 1;
-	scr->hud.size = size;
-	scr->hud.color = color_or_accent(color);
-	snprintf(scr->hud.text, sizeof scr->hud.text, "%s", mode);
-	snprintf(scr->hud.position, sizeof scr->hud.position, "%s", position);
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		scr->hud.visible = 1;
+		scr->hud.size = size;
+		scr->hud.color = color_or_accent(color);
+		snprintf(scr->hud.text, sizeof scr->hud.text, "%s", mode);
+		snprintf(scr->hud.position, sizeof scr->hud.position, "%s", position);
+	}
 }
 
 @interface HUDLabelView : NSView
@@ -166,17 +172,20 @@ void macos_update_hud(struct screen *scr)
 
 void osx_screen_draw_box(struct screen *scr, int x, int y, int w, int h, const char *color)
 {
-	assert(scr->nr_boxes < MAX_BOXES);
-	struct box *b = &scr->boxes[scr->nr_boxes++];
+	/* Called from the warpd thread, which never drains its own pool. */
+	@autoreleasepool {
+		assert(scr->nr_boxes < MAX_BOXES);
+		struct box *b = &scr->boxes[scr->nr_boxes++];
 
-	b->x = x;
-	b->y = y;
-	b->w = w;
-	b->h = h;
-	b->scr = scr;
-	b->color = color_or_accent(color);
+		b->x = x;
+		b->y = y;
+		b->w = w;
+		b->h = h;
+		b->scr = scr;
+		b->color = color_or_accent(color);
 
-	window_register_draw_hook(scr->overlay, draw_hook, b);
+		window_register_draw_hook(scr->overlay, draw_hook, b);
+	}
 }
 
 void osx_screen_list(struct screen *rscreens[MAX_SCREENS], size_t *n)
@@ -233,7 +242,7 @@ const char *osx_screen_get_id(struct screen *scr)
  * freed, so screen_t pointers held by the core (e.g grid.c, mouse.c) always
  * point to valid memory. The core re-fetches them at the start of every mode.
  */
-static void update_screens()
+static void update_screens(void)
 {
 	size_t i;
 	size_t n = 0;
@@ -284,7 +293,7 @@ static void update_screens()
  * Apply pending display configuration changes (hotplug, rearrangement,
  * resolution changes). Called from the warpd thread while idle.
  */
-void macos_sync_screens()
+void macos_sync_screens(void)
 {
 	dispatch_sync(dispatch_get_main_queue(), ^{
 		if (screens_dirty)
@@ -292,7 +301,7 @@ void macos_sync_screens()
 	});
 }
 
-void macos_init_screen()
+void macos_init_screen(void)
 {
 	update_screens();
 
