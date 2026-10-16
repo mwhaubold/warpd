@@ -120,6 +120,7 @@ void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
 		     const char *s, size_t typed);
 
 int macos_is_dark(NSView *view);
+NSFont *macos_get_font(const char *family, int w, int h, const char *s);
 void macos_update_hud(struct screen *scr);
 
 void send_key(uint8_t code, int pressed);

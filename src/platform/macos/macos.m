@@ -15,54 +15,49 @@ int macos_is_dark(NSView *view)
 }
 
 /*
- * Returns a font whose cap height fills roughly half of a box of height h
- * and whose rendering of s fits in w. Cached since every hint shares
- * the same dimensions.
+ * Returns a font whose cap height fills roughly half of a box of height h,
+ * shrunk if necessary so that s fits in w. The base font is cached by height
+ * so labels of different lengths share the same text size.
  */
-static NSFont *get_font(const char *family, int w, int h, const char *s)
+NSFont *macos_get_font(const char *family, int w, int h, const char *s)
 {
 	static NSFont *cached;
+	static CGFloat cached_mwidth;
 	static char cached_family[64];
-	static int cached_w, cached_h;
-	static size_t cached_len;
+	static int cached_h;
 
-	NSFont *font;
-	CGFloat ptsz;
-	CGFloat textw;
-	size_t len = strlen(s);
+	const size_t len = strlen(s);
 
-	if (cached && !strcmp(cached_family, family) && cached_w == w &&
-	    cached_h == h && cached_len == len)
-		return cached;
+	if (!cached || strcmp(cached_family, family) || cached_h != h) {
+		NSFont *font;
 
-	if (!strcmp(family, "auto"))
-		font = [NSFont monospacedSystemFontOfSize:h weight:NSFontWeightSemibold];
-	else
-		font = [NSFont fontWithName:[NSString stringWithUTF8String:family] size:h];
+		if (!strcmp(family, "auto"))
+			font = [NSFont monospacedSystemFontOfSize:h weight:NSFontWeightSemibold];
+		else
+			font = [NSFont fontWithName:[NSString stringWithUTF8String:family] size:h];
 
-	if (!font) {
-		fprintf(stderr, "ERROR: %s is not a valid font\n", family);
-		exit(-1);
+		if (!font) {
+			fprintf(stderr, "ERROR: %s is not a valid font\n", family);
+			exit(-1);
+		}
+
+		font = [NSFont fontWithDescriptor:font.fontDescriptor
+					     size:h * 0.5 / (font.capHeight / font.pointSize)];
+
+		/* Not compiled with ARC: keep the font alive beyond the current autorelease pool. */
+		[cached release];
+		cached = [font retain];
+		cached_mwidth = [@"m" sizeWithAttributes:@{NSFontAttributeName : font}].width;
+		snprintf(cached_family, sizeof cached_family, "%s", family);
+		cached_h = h;
 	}
 
-	ptsz = h * 0.5 / (font.capHeight / font.pointSize);
-	font = [NSFont fontWithDescriptor:font.fontDescriptor size:ptsz];
+	/* Shrink to fit horizontally (with some padding), 'm' being one of the widest glyphs. */
+	if (len * cached_mwidth > w * 0.8)
+		return [NSFont fontWithDescriptor:cached.fontDescriptor
+					     size:cached.pointSize * (w * 0.8) / (len * cached_mwidth)];
 
-	/* Shrink to fit horizontally (with some padding). */
-	textw = [[NSString stringWithUTF8String:s]
-	    sizeWithAttributes:@{NSFontAttributeName : font}].width;
-	if (textw > w * 0.8)
-		font = [NSFont fontWithDescriptor:font.fontDescriptor size:ptsz * (w * 0.8) / textw];
-
-	/* Not compiled with ARC: keep the font alive beyond the current autorelease pool. */
-	[cached release];
-	cached = [font retain];
-	snprintf(cached_family, sizeof cached_family, "%s", family);
-	cached_w = w;
-	cached_h = h;
-	cached_len = len;
-
-	return font;
+	return cached;
 }
 
 /* Draw s centered in the given (ULO) box, rendering the first typed characters with typed_col. */
@@ -70,7 +65,7 @@ void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
 		     const char *font_family, int x, int y, int w, int h,
 		     const char *s, size_t typed)
 {
-	NSFont *font = get_font(font_family, w, h, s);
+	NSFont *font = macos_get_font(font_family, w, h, s);
 	NSString *str = [NSString stringWithUTF8String:s];
 	NSMutableAttributedString *astr;
 	CGFloat baseline;

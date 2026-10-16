@@ -106,6 +106,7 @@ static struct {
 	{ "hint_font", PLATFORM_DEFAULT("auto", "Arial"), "The font name used by hints. Note: This is platform specific, in X it corresponds to a valid xft font name, on macos it corresponds to a postscript name (or \"auto\" for the system monospaced font).", OPT_STRING },
 
 	{ "hint_size", "20", "Hint size (range: 1-1000)", OPT_INT },
+	{ "hint_spacing", PLATFORM_DEFAULT("46", "0"), "The distance between hints in points, so that hints are equally precise on every screen. If a screen needs more hints than two hint_chars can label, the hints furthest from the pointer get three character labels. Set to 0 to instead spread the square of the number of hint_chars over the screen (hint_size then determines their size).", OPT_INT },
 	{ "hint_border_radius", PLATFORM_DEFAULT("6", "3"), "Border radius.", OPT_INT },
 
 	{ "hint_exit", "esc", "The exit key used for hint mode.", OPT_KEY },

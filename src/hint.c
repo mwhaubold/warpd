@@ -32,9 +32,23 @@ static void filter(screen_t scr, const char *s)
 	platform->commit();
 }
 
+/* Size of a hint box with a label of len characters when hint_spacing is set. */
+static void get_spaced_hint_size(size_t len, int *w, int *h)
+{
+	const int spacing = config_get_int("hint_spacing");
+
+	*h = spacing * 42 / 100;
+	*w = *h * (43 * (int)len + 55) / 100;
+}
+
 static void get_hint_size(screen_t scr, int *w, int *h)
 {
 	int sw, sh;
+
+	if (config_get_int("hint_spacing") > 0) {
+		get_spaced_hint_size(2, w, h);
+		return;
+	}
 
 	platform->screen_get_dimensions(scr, &sw, &sh);
 
@@ -48,6 +62,105 @@ static void get_hint_size(screen_t scr, int *w, int *h)
 	*h = (sh * config_get_int("hint_size")) / 1000;
 }
 
+static struct cell {
+	int x;
+	int y;
+	long dist;
+	int three_letters;
+} cells[MAX_HINTS];
+
+static int cmp_cell_dist(const void *a, const void *b)
+{
+	const struct cell *ca = *(const struct cell **)a;
+	const struct cell *cb = *(const struct cell **)b;
+
+	return (ca->dist > cb->dist) - (ca->dist < cb->dist);
+}
+
+/*
+ * Lay out hints hint_spacing points apart so that they are equally precise
+ * on every screen regardless of its size. If there are more hints than can
+ * be labelled with two characters, the last m characters of hint_chars are
+ * reserved as prefixes for three character labels, which are given to the
+ * hints furthest from the pointer. All labels are prefix free.
+ */
+static size_t generate_spaced_hints(screen_t scr, struct hint *hints)
+{
+	static struct cell *by_dist[MAX_HINTS];
+
+	const char *chars = config_get("hint_chars");
+	const size_t k = strlen(chars);
+	int spacing = config_get_int("hint_spacing");
+	int sw, sh, px, py;
+	size_t nc, nr, n, n2, m, i;
+	size_t next2 = 0, next3 = 0;
+
+	platform->screen_get_dimensions(scr, &sw, &sh);
+	platform->mouse_get_position(NULL, &px, &py);
+
+	/* Widen the spacing if the screen would need more hints than we can hold or label. */
+	while (1) {
+		nc = (sw + spacing / 2) / spacing;
+		nr = (sh + spacing / 2) / spacing;
+		nc = nc ? nc : 1;
+		nr = nr ? nr : 1;
+		n = nc * nr;
+
+		if (n <= MAX_HINTS && n <= k * k * k)
+			break;
+
+		spacing++;
+	}
+
+	m = n > k * k ? (n - k * k + (k * k - k) - 1) / (k * k - k) : 0;
+	n2 = MIN((k - m) * k, n);
+
+	for (i = 0; i < n; i++) {
+		struct cell *c = &cells[i];
+		const size_t col = i / nr;
+		const size_t row = i % nr;
+
+		c->x = (2 * col + 1) * sw / (2 * nc);
+		c->y = (2 * row + 1) * sh / (2 * nr);
+		c->dist = (long)(c->x - px) * (c->x - px) + (long)(c->y - py) * (c->y - py);
+		c->three_letters = 1;
+		by_dist[i] = c;
+	}
+
+	qsort(by_dist, n, sizeof by_dist[0], cmp_cell_dist);
+	for (i = 0; i < n2; i++)
+		by_dist[i]->three_letters = 0;
+
+	/* Assign labels in column-major order so that labels sharing a prefix stay close together. */
+	for (i = 0; i < n; i++) {
+		struct hint *hint = &hints[i];
+		size_t len;
+
+		if (cells[i].three_letters) {
+			const size_t idx = next3++;
+
+			hint->label[0] = chars[k - m + idx / (k * k)];
+			hint->label[1] = chars[(idx / k) % k];
+			hint->label[2] = chars[idx % k];
+			len = 3;
+		} else {
+			const size_t idx = next2++;
+
+			hint->label[0] = chars[idx / k];
+			hint->label[1] = chars[idx % k];
+			len = 2;
+		}
+
+		hint->label[len] = 0;
+		get_spaced_hint_size(len, &hint->w, &hint->h);
+		hint->x = cells[i].x - hint->w / 2;
+		hint->y = cells[i].y - hint->h / 2;
+		hint->typed = 0;
+	}
+
+	return n;
+}
+
 static size_t generate_fullscreen_hints(screen_t scr, struct hint *hints)
 {
 	int sw, sh;
@@ -56,6 +169,10 @@ static size_t generate_fullscreen_hints(screen_t scr, struct hint *hints)
 	size_t n = 0;
 
 	const char *chars = config_get("hint_chars");
+
+	if (config_get_int("hint_spacing") > 0 && strlen(chars) >= 2)
+		return generate_spaced_hints(scr, hints);
+
 	get_hint_size(scr, &w, &h);
 	platform->screen_get_dimensions(scr, &sw, &sh);
 
@@ -205,8 +322,16 @@ static int sift()
 	platform->mouse_get_position(&scr, &x, &y);
 	platform->screen_get_dimensions(scr, &sw, &sh);
 
-	gap = (gap * sh) / 1000;
-	hint_sz = (hint_sz * sh) / 1000;
+	if (config_get_int("hint_spacing") > 0) {
+		/* Cover a single first pass cell (plus some margin) on every screen. */
+		const int pitch = config_get_int("hint_spacing") * 4 / (3 * grid_sz);
+
+		gap = 2;
+		hint_sz = pitch - gap;
+	} else {
+		gap = (gap * sh) / 1000;
+		hint_sz = (hint_sz * sh) / 1000;
+	}
 
 	x -= ((hint_sz + (gap - 1)) * grid_sz) / 2;
 	y -= ((hint_sz + (gap - 1)) * grid_sz) / 2;
