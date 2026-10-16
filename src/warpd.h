@@ -133,6 +133,7 @@ size_t histfile_read(struct histfile_ent **entries);
 void histfile_add(int x, int y);
 
 void init_mouse();
+void draw_indicator(screen_t scr, const char *mode);
 
 const char *get_config_path(const char *file);
 const char *get_data_path(const char *file);

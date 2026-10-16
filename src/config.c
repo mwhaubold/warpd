@@ -7,6 +7,17 @@
 
 struct config_entry *config = NULL;
 
+/*
+ * Platform specific defaults. On macOS colors may also be "accent" (the
+ * system accent color) and hint colors/font may be "auto" (follow the system
+ * light/dark appearance and use the system font).
+ */
+#ifdef __APPLE__
+#define PLATFORM_DEFAULT(macos, other) macos
+#else
+#define PLATFORM_DEFAULT(macos, other) other
+#endif
+
 static struct {
 	char *key;
 	char *val;
@@ -55,7 +66,7 @@ static struct {
 	{ "scroll_down", "e", "Scroll down key.", OPT_KEY },
 	{ "scroll_up", "r", "Scroll up key.", OPT_KEY },
 
-	{ "cursor_color", "#FF4500", "The color of the pointer in normal mode (rgba hex value).", OPT_STRING },
+	{ "cursor_color", PLATFORM_DEFAULT("accent", "#FF4500"), "The color of the pointer in normal mode (rgba hex value, or \"accent\" on macOS).", OPT_STRING },
 
 	{ "cursor_size", "7", "The height of the pointer in normal mode.", OPT_INT },
 	{ "repeat_interval", "20", "The number of milliseconds before repeating a movement event.", OPT_INT },
@@ -83,19 +94,19 @@ static struct {
 	{ "grid_keys", "u i j k", "A sequence of comma delimited keybindings which are ordered bookwise with respect to grid position.", OPT_KEY },
 	{ "grid_exit", "c", "Exit grid mode and return to normal mode.", OPT_KEY },
 
-	{ "grid_size", "4", "The thickness of grid lines in pixels.", OPT_INT },
+	{ "grid_size", PLATFORM_DEFAULT("2", "4"), "The thickness of grid lines in pixels.", OPT_INT },
 	{ "grid_border_size", "0", "The thickness of the grid border in pixels.", OPT_INT },
 
-	{ "grid_color", "#1c1c1e", "The color of the grid.", OPT_STRING },
+	{ "grid_color", PLATFORM_DEFAULT("accent", "#1c1c1e"), "The color of the grid (rgba hex value, or \"accent\" on macOS).", OPT_STRING },
 	{ "grid_border_color", "#ffffff", "The color of the grid border.", OPT_STRING },
 
-	{ "hint_bgcolor", "#1c1c1e", "The background hint color.", OPT_STRING },
-	{ "hint_fgcolor", "#a1aba7", "The foreground hint color.", OPT_STRING },
+	{ "hint_bgcolor", PLATFORM_DEFAULT("auto", "#1c1c1e"), "The background hint color (rgba hex value, or \"auto\" on macOS to follow the system appearance).", OPT_STRING },
+	{ "hint_fgcolor", PLATFORM_DEFAULT("auto", "#a1aba7"), "The foreground hint color (rgba hex value, or \"auto\" on macOS to follow the system appearance).", OPT_STRING },
 	{ "hint_chars", "abcdefghijklmnopqrstuvwxyz", "The character set from which hints are generated. The total number of hints is the square of the size of this string. It may be desirable to increase this for larger screens or trim it to increase gaps between hints.", OPT_STRING },
-	{ "hint_font", "Arial", "The font name used by hints. Note: This is platform specific, in X it corresponds to a valid xft font name, on macos it corresponds to a postscript name.", OPT_STRING },
+	{ "hint_font", PLATFORM_DEFAULT("auto", "Arial"), "The font name used by hints. Note: This is platform specific, in X it corresponds to a valid xft font name, on macos it corresponds to a postscript name (or \"auto\" for the system monospaced font).", OPT_STRING },
 
 	{ "hint_size", "20", "Hint size (range: 1-1000)", OPT_INT },
-	{ "hint_border_radius", "3", "Border radius.", OPT_INT },
+	{ "hint_border_radius", PLATFORM_DEFAULT("6", "3"), "Border radius.", OPT_INT },
 
 	{ "hint_exit", "esc", "The exit key used for hint mode.", OPT_KEY },
 	{ "hint_undo", "backspace", "undo last selection step in one of the hint based modes.", OPT_KEY },
@@ -113,8 +124,8 @@ static struct {
 	{ "scroll_acceleration", "1600", "Scroll acceleration in units/second^2.", OPT_INT },
 	{ "scroll_deceleration", "-3400", "Scroll deceleration.", OPT_INT },
 
-	{ "indicator", "none", "Specifies an optional visual indicator to be displayed while normal mode is active, must be one of: topright, topleft, bottomright, bottomleft, none", OPT_STRING },
-	{ "indicator_color", "#00ff00", "The color of the visual indicator color.", OPT_STRING },
+	{ "indicator", PLATFORM_DEFAULT("bottomright", "none"), "Specifies an optional visual indicator to be displayed while normal mode is active (on macOS: a label showing the active mode), must be one of: topright, topleft, bottomright, bottomleft, none", OPT_STRING },
+	{ "indicator_color", PLATFORM_DEFAULT("accent", "#00ff00"), "The color of the visual indicator color (rgba hex value, or \"accent\" on macOS).", OPT_STRING },
 	{ "indicator_size", "12", "The size of the visual indicator in pixels.", OPT_INT },
 
 	{ "normal_system_cursor", "0", "If set to non-zero, use the system cursor instead of warpd's internal one.", OPT_INT },

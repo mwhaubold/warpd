@@ -37,6 +37,9 @@ struct hint {
 	int h;
 
 	char label[16];
+
+	/* Number of leading label characters which have already been typed. */
+	uint8_t typed;
 };
 
 struct screen;
@@ -88,6 +91,18 @@ struct platform {
 	void (*scroll)(int direction);
 
 	void (*copy_selection)();
+
+	/*
+	 * Optional (may be NULL), platforms which don't provide these fall
+	 * back to drawing boxes with screen_draw_box().
+	 */
+
+	/* Draw the pointer centered at x,y. */
+	void (*screen_draw_cursor)(screen_t scr, int x, int y, int size, const char *color);
+
+	/* Show a mode indicator (e.g "NORMAL") at the given position (e.g "topright"). */
+	void (*screen_draw_indicator)(screen_t scr, const char *mode,
+				      const char *position, int size, const char *color);
 
 	/*
 	* Draw operations may (or may not) be queued until this function

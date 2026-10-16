@@ -23,6 +23,7 @@ void screen_selection_mode()
 
 		hint.label[0] = screen_chars[i];
 		hint.label[1] = 0;
+		hint.typed = 0;
 
 		platform->hint_draw(screens[i], &hint, 1);
 	}

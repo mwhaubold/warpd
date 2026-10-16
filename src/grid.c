@@ -69,10 +69,16 @@ static void redraw(int mx, int my, int force)
 		  x+gbsz, y+gbsz,
 		  gw-gbsz*2, gh-gbsz*2);
 
-	platform->screen_draw_box(scr,
-			x+gw/2-cursz/2, y+gh/2-cursz/2,
-			cursz, cursz,
-			config_get("cursor_color"));
+	if (platform->screen_draw_cursor)
+		platform->screen_draw_cursor(scr, x+gw/2, y+gh/2, cursz,
+					     config_get("cursor_color"));
+	else
+		platform->screen_draw_box(scr,
+				x+gw/2-cursz/2, y+gh/2-cursz/2,
+				cursz, cursz,
+				config_get("cursor_color"));
+
+	draw_indicator(scr, "GRID");
 
 	platform->commit();
 }

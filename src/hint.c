@@ -20,12 +20,15 @@ static void filter(screen_t scr, const char *s)
 
 	nr_matched = 0;
 	for (i = 0; i < nr_hints; i++) {
-		if (strstr(hints[i].label, s) == hints[i].label)
-			matched[nr_matched++] = hints[i];
+		if (strstr(hints[i].label, s) == hints[i].label) {
+			matched[nr_matched] = hints[i];
+			matched[nr_matched++].typed = strlen(s);
+		}
 	}
 
 	platform->screen_clear(scr);
 	platform->hint_draw(scr, matched, nr_matched);
+	draw_indicator(scr, "HINT");
 	platform->commit();
 }
 

@@ -6,26 +6,33 @@
 
 #include "warpd.h"
 
-static void redraw(screen_t scr, int x, int y, int hide_cursor)
+/*
+ * Draw the mode indicator (if enabled). Platforms without a native
+ * indicator get the classic colored box, in normal mode only.
+ */
+void draw_indicator(screen_t scr, const char *mode)
 {
 	int sw, sh;
 
-	platform->screen_get_dimensions(scr, &sw, &sh);
-
 	const int gap = 10;
-	const int indicator_size = (config_get_int("indicator_size") * sh) / 1080;
 	const char *indicator_color = config_get("indicator_color");
-	const char *curcol = config_get("cursor_color");
 	const char *indicator = config_get("indicator");
-	const int cursz = config_get_int("cursor_size");
 
-	platform->screen_clear(scr);
+	if (!strcmp(indicator, "none"))
+		return;
 
-	if (!hide_cursor)
-		platform->screen_draw_box(scr, x+1, y-cursz/2,
-				cursz, cursz,
-				curcol);
+	if (platform->screen_draw_indicator) {
+		platform->screen_draw_indicator(scr, mode, indicator,
+						config_get_int("indicator_size"),
+						indicator_color);
+		return;
+	}
 
+	if (strcmp(mode, "NORMAL"))
+		return;
+
+	platform->screen_get_dimensions(scr, &sw, &sh);
+	const int indicator_size = (config_get_int("indicator_size") * sh) / 1080;
 
 	if (!strcmp(indicator, "bottomleft"))
 		platform->screen_draw_box(scr, gap, sh-indicator_size-gap, indicator_size, indicator_size, indicator_color);
@@ -35,6 +42,25 @@ static void redraw(screen_t scr, int x, int y, int hide_cursor)
 		platform->screen_draw_box(scr, sw-indicator_size-gap, gap, indicator_size, indicator_size, indicator_color);
 	else if (!strcmp(indicator, "bottomright"))
 		platform->screen_draw_box(scr, sw-indicator_size-gap, sh-indicator_size-gap, indicator_size, indicator_size, indicator_color);
+}
+
+static void redraw(screen_t scr, int x, int y, int hide_cursor)
+{
+	const char *curcol = config_get("cursor_color");
+	const int cursz = config_get_int("cursor_size");
+
+	platform->screen_clear(scr);
+
+	if (!hide_cursor) {
+		if (platform->screen_draw_cursor)
+			platform->screen_draw_cursor(scr, x, y, cursz, curcol);
+		else
+			platform->screen_draw_box(scr, x+1, y-cursz/2,
+					cursz, cursz,
+					curcol);
+	}
+
+	draw_indicator(scr, "NORMAL");
 
 	platform->commit();
 }

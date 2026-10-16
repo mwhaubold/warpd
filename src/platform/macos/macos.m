@@ -6,49 +6,95 @@
 
 #include "macos.h"
 
-static NSDictionary *get_font_attrs(const char *family, NSColor *color, int h)
+int macos_is_dark(NSView *view)
 {
-	NSDictionary *attrs;
+	NSAppearanceName name = [view.effectiveAppearance
+	    bestMatchFromAppearancesWithNames:@[ NSAppearanceNameAqua, NSAppearanceNameDarkAqua ]];
 
-	int ptsz = h;
-	CGSize size;
-	do {
-		NSFont *font =
-		    [NSFont fontWithName:[NSString stringWithUTF8String:family]
-				    size:ptsz];
-		if (!font) {
-			fprintf(stderr, "ERROR: %s is not a valid font\n",
-				family);
-			exit(-1);
-		}
-		attrs = @{
-			NSFontAttributeName : font,
-			NSForegroundColorAttributeName : color,
-		};
-		size = [@"m" sizeWithAttributes:attrs];
-		ptsz--;
-	} while (size.height > h);
-
-	return attrs;
+	return [name isEqualToString:NSAppearanceNameDarkAqua];
 }
 
-void macos_draw_text(struct screen *scr, NSColor *col, const char *font,
-		     int x, int y, int w,
-		     int h, const char *s)
+/*
+ * Returns a font whose cap height fills roughly half of a box of height h
+ * and whose rendering of s fits in w. Cached since every hint shares
+ * the same dimensions.
+ */
+static NSFont *get_font(const char *family, int w, int h, const char *s)
 {
+	static NSFont *cached;
+	static char cached_family[64];
+	static int cached_w, cached_h;
+	static size_t cached_len;
 
-	NSDictionary *attrs = get_font_attrs(font, col, h);
+	NSFont *font;
+	CGFloat ptsz;
+	CGFloat textw;
+	size_t len = strlen(s);
+
+	if (cached && !strcmp(cached_family, family) && cached_w == w &&
+	    cached_h == h && cached_len == len)
+		return cached;
+
+	if (!strcmp(family, "auto"))
+		font = [NSFont monospacedSystemFontOfSize:h weight:NSFontWeightSemibold];
+	else
+		font = [NSFont fontWithName:[NSString stringWithUTF8String:family] size:h];
+
+	if (!font) {
+		fprintf(stderr, "ERROR: %s is not a valid font\n", family);
+		exit(-1);
+	}
+
+	ptsz = h * 0.5 / (font.capHeight / font.pointSize);
+	font = [NSFont fontWithDescriptor:font.fontDescriptor size:ptsz];
+
+	/* Shrink to fit horizontally (with some padding). */
+	textw = [[NSString stringWithUTF8String:s]
+	    sizeWithAttributes:@{NSFontAttributeName : font}].width;
+	if (textw > w * 0.8)
+		font = [NSFont fontWithDescriptor:font.fontDescriptor size:ptsz * (w * 0.8) / textw];
+
+	cached = font;
+	snprintf(cached_family, sizeof cached_family, "%s", family);
+	cached_w = w;
+	cached_h = h;
+	cached_len = len;
+
+	return font;
+}
+
+/* Draw s centered in the given (ULO) box, rendering the first typed characters with typed_col. */
+void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
+		     const char *font_family, int x, int y, int w, int h,
+		     const char *s, size_t typed)
+{
+	NSFont *font = get_font(font_family, w, h, s);
 	NSString *str = [NSString stringWithUTF8String:s];
-	CGSize size = [str sizeWithAttributes:attrs];
+	NSMutableAttributedString *astr;
+	CGFloat baseline;
+	CGSize size;
 
-	x += (w - size.width)/2;
+	astr = [[NSMutableAttributedString alloc]
+	    initWithString:str
+		attributes:@{
+			NSFontAttributeName : font,
+			NSForegroundColorAttributeName : col,
+			/* Labels are arbitrary letter pairs, never merge them (e.g "fi"). */
+			NSLigatureAttributeName : @0,
+		}];
 
-	y += size.height + (h - size.height)/2;
+	typed = MIN(typed, str.length);
+	if (typed && typed_col)
+		[astr addAttribute:NSForegroundColorAttributeName
+			     value:typed_col
+			     range:NSMakeRange(0, typed)];
 
-	/* Convert to LLO */
-	y = scr->h - y;
+	size = astr.size;
 
-	[str drawAtPoint:NSMakePoint((float)x, (float)y) withAttributes: attrs];
+	/* Center the cap height vertically (LLO). */
+	baseline = (scr->h - y - h / 2.0) - font.capHeight / 2;
+
+	[astr drawAtPoint:NSMakePoint(x + (w - size.width) / 2, baseline + font.descender)];
 }
 
 void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w, float h, float r)
@@ -64,6 +110,21 @@ void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w,
 			      xRadius:(float)r
 			      yRadius:(float)r];
 	[path fill];
+}
+
+/*
+ * Like nscolor_from_hex(), but also understands "accent" (the system accent
+ * color). Returns nil for "auto", leaving the choice to the caller.
+ */
+NSColor *macos_color(const char *str)
+{
+	if (!strcmp(str, "auto"))
+		return nil;
+
+	if (!strcmp(str, "accent"))
+		return NSColor.controlAccentColor;
+
+	return nscolor_from_hex(str);
 }
 
 
@@ -103,7 +164,7 @@ NSColor *nscolor_from_hex(const char *str)
 		a |= X2B(str[7]);
 	}
 
-	return [NSColor colorWithCalibratedRed:(float)r / 255
+	return [NSColor colorWithSRGBRed:(float)r / 255
 					 green:(float)g / 255
 					  blue:(float)b / 255
 					 alpha:(float)a / 255];
@@ -151,7 +212,9 @@ void osx_commit()
 		for (i = 0; i < nr_screens; i++) {
 			struct window *win = screens[i].overlay;
 
-			if (win->nr_hooks)
+			macos_update_hud(&screens[i]);
+
+			if (win->nr_hooks || screens[i].hud.visible)
 				window_show(win);
 			else
 				window_hide(win);
@@ -186,6 +249,8 @@ static void *mainloop(void *arg)
 		.screen_list = osx_screen_list,
 		.scroll = osx_scroll,
 		.monitor_file = osx_monitor_file,
+		.screen_draw_cursor = osx_screen_draw_cursor,
+		.screen_draw_indicator = osx_screen_draw_indicator,
 	};
 
 	main(&platform);

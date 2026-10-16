@@ -38,8 +38,6 @@ struct box {
 	NSColor *color;
 };
 
-size_t nr_boxes;
-
 struct drawing_hook {
 	void (*hook)(void *arg, NSView *view);
 	void *arg;
@@ -47,6 +45,11 @@ struct drawing_hook {
 
 struct window {
 	NSWindow *win;
+
+	/* Whether the window should be visible (it may still be fading out). */
+	int visible;
+	/* Incremented on every show/hide, used to cancel stale fade outs. */
+	unsigned int generation;
 
 	size_t nr_hooks;
 	struct drawing_hook hooks[MAX_DRAWING_HOOKS];
@@ -68,6 +71,25 @@ struct screen {
 
 	struct window *overlay;
 
+	/* Area not covered by the menu bar or dock, relative to x,y (LLO). */
+	NSRect visible_frame;
+
+	struct {
+		int x;
+		int y;
+		int size;
+		NSColor *color;
+	} cursor;
+
+	/* Mode indicator, applied to hud_view on commit. */
+	struct {
+		int visible;
+		char text[16];
+		char position[16];
+		int size;
+		NSColor *color;
+	} hud;
+	NSVisualEffectView *hud_view;
 };
 
 
@@ -90,12 +112,17 @@ void macos_sync_screens();
 void macos_draw_box(struct screen *scr, NSColor *col, float x, float y, float w,
 		    float h, float r);
 
-void macos_draw_text(struct screen *scr, NSColor *col, const char *font, int x,
-		     int y, int w, int h, const char *s);
+void macos_draw_text(struct screen *scr, NSColor *col, NSColor *typed_col,
+		     const char *font, int x, int y, int w, int h,
+		     const char *s, size_t typed);
+
+int macos_is_dark(NSView *view);
+void macos_update_hud(struct screen *scr);
 
 void send_key(uint8_t code, int pressed);
 
 NSColor *nscolor_from_hex(const char *str);
+NSColor *macos_color(const char *str);
 
 extern struct screen screens[MAX_SCREENS];
 extern size_t nr_screens;
@@ -117,6 +144,8 @@ void osx_mouse_hide();
 void osx_screen_get_dimensions(screen_t scr, int *w, int *h);
 void osx_screen_draw_box(screen_t scr, int x, int y, int w, int h, const char *color);
 void osx_screen_clear(screen_t scr);
+void osx_screen_draw_cursor(screen_t scr, int x, int y, int size, const char *color);
+void osx_screen_draw_indicator(screen_t scr, const char *mode, const char *position, int size, const char *color);
 void osx_screen_list(screen_t scr[MAX_SCREENS], size_t *n);
 void osx_init_hint(const char *bg, const char *fg, int border_radius, const char *font_family);
 void osx_hint_draw(struct screen *scr, struct hint *hints, size_t n);
