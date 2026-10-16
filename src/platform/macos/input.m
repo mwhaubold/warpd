@@ -492,6 +492,17 @@ void macos_init_input()
 
 	if (!access) {
 		printf("Waiting for accessibility permissions\n");
+
+		/*
+		 * macOS checks the permissions of the "responsible" app, which
+		 * for a binary started from a terminal is the terminal itself.
+		 */
+		if (isatty(STDERR_FILENO))
+			fprintf(stderr,
+				"NOTE: When started from a terminal, macOS checks the terminal app's\n"
+				"accessibility permission rather than warpd's own. Run warpd as a\n"
+				"service instead (`make install-user`) and grant access to the\n"
+				"installed binary.\n");
 		tap = nil;
 		while (!tap) {
 			tap = CGEventTapCreate(kCGSessionEventTap, kCGHeadInsertEventTap, 0,
